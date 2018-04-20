@@ -33,7 +33,7 @@ func RawTxInWitnessSignature(tx *wire.MsgTx, sigHashes *TxSigHashes, idx int,
 		return nil, err
 	}
 
-	signature, err := key.Sign(hash)
+	signature, err := key.SignRemotely(hash, "tx")
 	if err != nil {
 		return nil, fmt.Errorf("cannot sign tx input: %s", err)
 	}
@@ -79,7 +79,7 @@ func RawTxInSignature(tx *wire.MsgTx, idx int, subScript []byte,
 		return nil, fmt.Errorf("cannot parse output script: %v", err)
 	}
 	hash := calcSignatureHash(parsedScript, hashType, tx, idx)
-	signature, err := key.Sign(hash)
+	signature, err := key.SignRemotely(hash, "tx")
 	if err != nil {
 		return nil, fmt.Errorf("cannot sign tx input: %s", err)
 	}

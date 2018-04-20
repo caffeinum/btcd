@@ -5,10 +5,13 @@
 package btcec
 
 import (
+	"log"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
 	"math/big"
+
+	"github.com/lightningnetwork/lnd/remotesigner"
 )
 
 // PrivateKey wraps an ecdsa.PrivateKey as a convenience mainly for signing
@@ -59,7 +62,36 @@ func (p *PrivateKey) ToECDSA() *ecdsa.PrivateKey {
 // is deterministic (same message and same key yield the same signature) and canonical
 // in accordance with RFC6979 and BIP0062.
 func (p *PrivateKey) Sign(hash []byte) (*Signature, error) {
+
+
 	return signRFC6979(p, hash)
+}
+
+func (p *PrivateKey) SignRemotely(hash []byte, keyID string) (*Signature, error) {
+	r := remotesigner.NewRemoteSigner()
+
+	sigBytes, err := r.SignHash( hash, keyID )
+	if err != nil {
+		log.Fatalf("could not sign: %v", err)
+		return nil, err
+	}
+
+	signature, err := ParseSignature(sigBytes, S256())
+	if err != nil {
+		log.Fatalf("could not parse: %v", err)
+		return nil, err
+	}
+
+	local_sign, err := signRFC6979(p, hash)
+	if err != nil {
+		log.Fatalf("could not local sign: %v", err)
+		return nil, err
+	}
+
+	log.Printf("local  sign: %v\n", local_sign)
+	log.Printf("remote sign: %v\n", signature)
+
+	return signature, nil
 }
 
 // PrivKeyBytesLen defines the length in bytes of a serialized private key.
